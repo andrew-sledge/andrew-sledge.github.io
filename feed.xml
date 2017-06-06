@@ -1,1 +1,96 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-06T08:40:32-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Load Balancing in Nginx</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx.html" rel="alternate" type="text/html" title="Load Balancing in Nginx" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx.html"></content><author><name></name></author><summary type="html"></summary></entry></feed>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-06T09:25:33-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
+load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to 
+proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).&lt;/p&gt;
+
+&lt;p&gt;First let’s cover the three types of load balancing:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;round-robin: server selection is round-robin style&lt;/li&gt;
+  &lt;li&gt;least-connected: server selection is based on the server with the least number of active connection&lt;/li&gt;
+  &lt;li&gt;ip-hash: server selection is based on a hash computed by the client IP.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The default type is round-robin. By simply identifying the proxy_pass you get a round-robin’ed load balancer:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now suppose you wanted to use least-connected to spread the work around more evenly:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;least_conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The least_conn directive was added to the posts endpoint. Suppose you want a “sticky session”, whereby the client stays on the same server:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;ip_hash&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;least_conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Sticky sessions help in maintaining state as you may use in an authenticated environment.&lt;/p&gt;</content><author><name></name></author><summary type="html">One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).</summary></entry></feed>
