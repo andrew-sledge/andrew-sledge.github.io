@@ -1,6 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-06T09:31:58-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-08T09:28:02-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
 load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to 
 proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).&lt;/p&gt;
+
+&lt;h1 id=&quot;overview&quot;&gt;Overview&lt;/h1&gt;
 
 &lt;p&gt;First let’s cover the three types of load balancing:&lt;/p&gt;
 &lt;ul&gt;
@@ -93,4 +95,41 @@ proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
-&lt;p&gt;Sticky sessions help in maintaining state as you may use in an authenticated environment.&lt;/p&gt;</content><author><name></name></author><summary type="html">One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).</summary></entry></feed>
+&lt;p&gt;Sticky sessions help in maintaining state as you may use in an authenticated environment (hence why I stuck that part in the users section).&lt;/p&gt;
+
+&lt;h1 id=&quot;health-checking&quot;&gt;Health Checking&lt;/h1&gt;
+
+&lt;p&gt;There are two primary tools for health checks. A health check is just a probe by the Nginx server to the upstream servers for healthiness. By 
+default if the check fails once, the that server is not retried for the time specified by fail_timeout (10 seconds default). In our on-going use
+case we’ll have more failure tolerance for the posts endpoint, but very little for the users endpoint.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;ip_hash&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=30s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=30s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;least_conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=5s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=5s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=5s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;up-next&quot;&gt;Up Next&lt;/h1&gt;
+
+&lt;p&gt;In part 2, we’ll be covering uWSGI and FastCGI servers and the associated options.&lt;/p&gt;</content><author><name></name></author><summary type="html">One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).</summary></entry></feed>

@@ -85,6 +85,8 @@
 load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to 
 proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).</p>
 
+<h1 id="overview">Overview</h1>
+
 <p>First let’s cover the three types of load balancing:</p>
 <ul>
   <li>round-robin: server selection is round-robin style</li>
@@ -176,7 +178,44 @@ proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C
     <span class="p">}</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>Sticky sessions help in maintaining state as you may use in an authenticated environment.</p>
+<p>Sticky sessions help in maintaining state as you may use in an authenticated environment (hence why I stuck that part in the users section).</p>
+
+<h1 id="health-checking">Health Checking</h1>
+
+<p>There are two primary tools for health checks. A health check is just a probe by the Nginx server to the upstream servers for healthiness. By 
+default if the check fails once, the that server is not retried for the time specified by fail_timeout (10 seconds default). In our on-going use
+case we’ll have more failure tolerance for the posts endpoint, but very little for the users endpoint.</p>
+
+<figure class="highlight"><pre><code class="language-nginx" data-lang="nginx"><span class="k">http</span> <span class="p">{</span>
+    <span class="kn">upstream</span> <span class="s">users</span> <span class="p">{</span>
+        <span class="kn">ip_hash</span><span class="p">;</span>
+        <span class="kn">server</span> <span class="s">users1.host.com</span> <span class="s">fail_timeout=30s</span> <span class="s">max_fails=2</span><span class="p">;</span>
+        <span class="kn">server</span> <span class="s">users2.host.com</span> <span class="s">fail_timeout=30s</span> <span class="s">max_fails=2</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kn">upstream</span> <span class="s">posts</span> <span class="p">{</span>
+        <span class="kn">least_conn</span><span class="p">;</span>
+        <span class="kn">server</span> <span class="s">posts1.host.com</span> <span class="s">fail_timeout=5s</span> <span class="s">max_fails=5</span><span class="p">;</span>
+        <span class="kn">server</span> <span class="s">posts2.host.com</span> <span class="s">fail_timeout=5s</span> <span class="s">max_fails=5</span><span class="p">;</span>
+        <span class="kn">server</span> <span class="s">posts3.host.com</span> <span class="s">fail_timeout=5s</span> <span class="s">max_fails=5</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kn">server</span> <span class="p">{</span>
+        <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+
+        <span class="kn">location</span> <span class="n">/users</span> <span class="p">{</span>
+            <span class="kn">proxy_pass</span> <span class="s">http://users</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="kn">location</span> <span class="n">/posts</span> <span class="p">{</span>
+            <span class="kn">proxy_pass</span> <span class="s">http://posts</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<h1 id="up-next">Up Next</h1>
+
+<p>In part 2, we’ll be covering uWSGI and FastCGI servers and the associated options.</p>
 
   </div>
 
