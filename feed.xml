@@ -1,4 +1,180 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-08T09:28:02-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-20T07:42:33-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Good PaaS, Bad PaaS</title><link href="https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas.html" rel="alternate" type="text/html" title="Good PaaS, Bad PaaS" /><published>2017-06-19T20:32:51-04:00</published><updated>2017-06-19T20:32:51-04:00</updated><id>https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas.html">&lt;p&gt;Amazon has promised a lot of things: cheap consumer goods, quick delivery, low prices, quality PaaS. Well all but that last one.&lt;/p&gt;
+
+&lt;p&gt;So comes &lt;a href=&quot;https://read.acloud.guru/things-you-should-know-before-using-awss-elasticsearch-service-7cd70c9afb4f&quot;&gt;this post warning you about using the AWS Elasticsearch Service&lt;/a&gt;.
+I get it. Really, I do, wholeheartedly. I’m going through this right now with EMR. All I want to be able to do is get message throughput from my Spark application and
+emitted to a Ganglia sink. That’s all. It’s nothing too exotic or bleeding edge. The problem is that the distribution of Spark that EMR ships doesn’t support this. According to
+&lt;a href=&quot;http://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-ganglia.html#Hadoopmetrics_Ganglia&quot;&gt;the documentation&lt;/a&gt; this should be on by default but doesn’t appear to be. Reading on
+through more docs, there appears to have been &lt;a href=&quot;https://github.com/awslabs/emr-bootstrap-actions/blob/master/spark/install-ganglia-metrics&quot;&gt;a bootstrap action available at one point to enable Ganglia sinks&lt;/a&gt;. This doesn’t work either. Time to call support:&lt;/p&gt;
+
+&lt;p&gt;Regarding the Ganglia sinks being on by default:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Starting emr-4.4.0, service-team removed above configuration in defaults.conf because of Hadoop2.7.1+Spark applications where RRDs causing the disk full. This is also mentioned in the following release notes.
+
+https://docs.aws.amazon.com/ElasticMapReduce/latest/ReleaseGuide/emr-whatsnew.html
+
+Release note days like this : &quot;Fixed an issue where YARN containers and Spark applications would generate a unique Ganglia round robin database (rrd) file, which resulted in the first disk attached to the instance filling up. As a result of this fix, YARN container level metrics and Spark application level metrics have been disabled.&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Regarding the AWS-supplied bootstrap action:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;I have tried the configuration mentioned in the previous correspondence and can confirm that this in in fact the correct way of handling the Spark metrics in Ganglia. Of course these stats are no longer available by default in the newer versions of EMR due to the bug mentioned by my colleague. If you wish to enable them, you're going to have to apply them via a bootstrap action or manually editing the EMR configurations on the master node.
+
+There are two methods of applying these settings to your cluster. Unfortunately you can only perform the said changes via a bootstrap action (mentioned in the correspondence) as one cannot apply the configurations to the cluster via the console because one does not know the master IP or hostname at the time of launch of the cluster.
+
+Once you've applied these settings to the cluster, you will have the ability to view the metrics from Spark in Ganglia. There is no documentation similar to that you provide in the link because they're not enabled by default and in fact, it seem that by the link provided, they're been removed for good reason. Enabling them is not something, it seems, we encourage customers to do. Of course this does not mean it cannot be done.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;A couple of things that are highly annoying here: the documentation for current releases is woefully out of date, and monitoring the application is seemingly an afterthought here with a near-industry-standard monitoring tools like Ganglia.&lt;/p&gt;
+
+&lt;p&gt;To be fair, everyone wants a PaaS until they don’t want a PaaS. But they want a PaaS on their terms, not the provider’s. And this is where the provider fails to deliver. And it’s not just Amazon, I’ve experienced this with Google too. So here’s a short list of good PaaS versus bad PaaS, done in Ben Horowitz-style:&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Provides ample documentation with release specific annotations, regularly reviews that generated documentation is correct
+&lt;em&gt;Bad PaaS&lt;/em&gt;: Auto-builds documentation with no review process&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Provides highly configurable solutions that allows the customer to turn off or on every facet of the service
+&lt;em&gt;Bad PaaS&lt;/em&gt;: Minimal access to configurability with no easy path to make changes&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Provides a solution that is significantly cheaper than rolling your own
+&lt;em&gt;Bad PaaS&lt;/em&gt;: Provides a solution that is even with, or even costs more than rolling your own&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Configurability is intuitive, or at least documented enough to make sense
+&lt;em&gt;Bad PaaS&lt;/em&gt;: Configurability is in the form of scripts that are hard to interpret and hard to write&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Has support staff that is an expert on that service, with even developers/engineers answering questions
+&lt;em&gt;Bad PaaS&lt;/em&gt;: Has generic-level technical support staff&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Understands that just putting any front end on the service doesn’t create the product, but also requires a deep understanding of the service itself
+&lt;em&gt;Bad PaaS&lt;/em&gt;: Sticks a web interface on the service to tweak a couple settings, and then calls it good&lt;/p&gt;</content><author><name></name></author><summary type="html">Amazon has promised a lot of things: cheap consumer goods, quick delivery, low prices, quality PaaS. Well all but that last one.</summary></entry><entry><title type="html">Load Balancing in Nginx Part 2</title><link href="https://andrew-sledge.github.io/2017/06/13/load-balancing-in-nginx-part-2.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 2" /><published>2017-06-13T12:16:01-04:00</published><updated>2017-06-13T12:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/13/load-balancing-in-nginx-part-2</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/13/load-balancing-in-nginx-part-2.html">&lt;h1 id=&quot;overview&quot;&gt;Overview&lt;/h1&gt;
+
+&lt;p&gt;First let’s cover the three types of load balancing:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;round-robin: server selection is round-robin style&lt;/li&gt;
+  &lt;li&gt;least-connected: server selection is based on the server with the least number of active connection&lt;/li&gt;
+  &lt;li&gt;ip-hash: server selection is based on a hash computed by the client IP.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The default type is round-robin. By simply identifying the proxy_pass you get a round-robin’ed load balancer:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now suppose you wanted to use least-connected to spread the work around more evenly:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;least_conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;The least_conn directive was added to the posts endpoint. Suppose you want a “sticky session”, whereby the client stays on the same server:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;ip_hash&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;least_conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Sticky sessions help in maintaining state as you may use in an authenticated environment (hence why I stuck that part in the users section).&lt;/p&gt;
+
+&lt;h1 id=&quot;health-checking&quot;&gt;Health Checking&lt;/h1&gt;
+
+&lt;p&gt;There are two primary tools for health checks. A health check is just a probe by the Nginx server to the upstream servers for healthiness. By 
+default if the check fails once, the that server is not retried for the time specified by fail_timeout (10 seconds default). In our on-going use
+case we’ll have more failure tolerance for the posts endpoint, but very little for the users endpoint.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;http&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;ip_hash&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users1.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=30s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users2.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=30s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;upstream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;least_conn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts1.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=5s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts2.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=5s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;posts3.host.com&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fail_timeout=5s&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;max_fails=5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/posts&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kn&quot;&gt;proxy_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;http://posts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;up-next&quot;&gt;Up Next&lt;/h1&gt;
+
+&lt;p&gt;In part 2, we’ll be covering uWSGI and FastCGI servers and the associated options.&lt;/p&gt;</content><author><name></name></author><summary type="html">Overview</summary></entry><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
 load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to 
 proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).&lt;/p&gt;
 
