@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-06-20T07:49:09-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Good PaaS, Bad PaaS</title><link href="https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas.html" rel="alternate" type="text/html" title="Good PaaS, Bad PaaS" /><published>2017-06-19T20:32:51-04:00</published><updated>2017-06-19T20:32:51-04:00</updated><id>https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas.html">&lt;p&gt;Amazon has promised a lot of things: cheap consumer goods, quick delivery, low prices, quality PaaS. Well all but that last one.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="https://andrew-sledge.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://andrew-sledge.github.io/" rel="alternate" type="text/html" /><updated>2017-10-03T16:35:03-04:00</updated><id>https://andrew-sledge.github.io/</id><title type="html">this stupid computer locked up again</title><entry><title type="html">Good PaaS, Bad PaaS</title><link href="https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas.html" rel="alternate" type="text/html" title="Good PaaS, Bad PaaS" /><published>2017-06-19T20:32:51-04:00</published><updated>2017-06-19T20:32:51-04:00</updated><id>https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/19/good-paas-bad-paas.html">&lt;p&gt;Amazon has promised a lot of things: cheap consumer goods, quick delivery, low prices, quality PaaS. Well all but that last one.&lt;/p&gt;
 
 &lt;p&gt;So comes &lt;a href=&quot;https://read.acloud.guru/things-you-should-know-before-using-awss-elasticsearch-service-7cd70c9afb4f&quot;&gt;this post warning you about using the AWS Elasticsearch Service&lt;/a&gt;.
 I get it. Really, I do, wholeheartedly. I’m going through this right now with EMR. All I want to be able to do is get message throughput from my Spark application and
@@ -78,7 +78,136 @@ cannot be done.
   &lt;/li&gt;
   &lt;li&gt;&lt;em&gt;Good PaaS&lt;/em&gt;: Understands that just putting any front end on the service doesn’t create the product, but also requires a deep understanding of the service itself&lt;/li&gt;
   &lt;li&gt;&lt;em&gt;Bad PaaS&lt;/em&gt;: Sticks a web interface on the service to tweak a couple settings, and then calls it good&lt;/li&gt;
-&lt;/ul&gt;</content><author><name></name></author><summary type="html">Amazon has promised a lot of things: cheap consumer goods, quick delivery, low prices, quality PaaS. Well all but that last one.</summary></entry><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
+&lt;/ul&gt;</content><author><name></name></author><summary type="html">Amazon has promised a lot of things: cheap consumer goods, quick delivery, low prices, quality PaaS. Well all but that last one.</summary></entry><entry><title type="html">Load Balancing in Nginx Part 2</title><link href="https://andrew-sledge.github.io/2017/06/13/load-balancing-in-nginx-part-2.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 2" /><published>2017-06-13T12:16:01-04:00</published><updated>2017-06-13T12:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/13/load-balancing-in-nginx-part-2</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/13/load-balancing-in-nginx-part-2.html">&lt;p&gt;As covered in &lt;a href=&quot;/2017/06/06/load-balancing-in-nginx-part-1.html&quot;&gt;part 1&lt;/a&gt; we are diving into Nginx as a load balancer. In this part we cover 
+uWSGI and FastCGI servers, initially with no load balancing (for testing) and then with load balancing.&lt;/p&gt;
+
+&lt;h1 id=&quot;overview&quot;&gt;Overview&lt;/h1&gt;
+
+&lt;p&gt;uWSGI and FastCGI are two ways for interfacing a web server with a running program. Of the two, FastCGI certainly has more language support 
+but uWSGI is considered a little more native if you’re using Python (because of it’s WSGI history) and has a lot more to offer in terms of 
+tooling and capabilities. However, for this tutorial, we’ll be covering it only as a basic interface between Nginx and python.&lt;/p&gt;
+
+&lt;p&gt;Here’s an example Python application using &lt;a href=&quot;http://flask.pocoo.org/&quot;&gt;Flask&lt;/a&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/usr/local/lib/python2.7/site-packages&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;flask&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Flask&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Flask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__name__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;nd&quot;&gt;@app.route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'/'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'User Index'&lt;/span&gt;
+
+&lt;span class=&quot;nd&quot;&gt;@app.route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'/list'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'User list'&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__name__&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;__main__&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now start the application to test for errors:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;./testapp.py 
+ &lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; Running on http://127.0.0.1:9000/ &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Press CTRL+C to quit&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;As you can see, it’s running on port 9000 which is what we specified in the Flask application. You can shut it down.&lt;/p&gt;
+
+&lt;h1 id=&quot;fastcgi&quot;&gt;FastCGI&lt;/h1&gt;
+
+&lt;h2 id=&quot;single-server&quot;&gt;Single server&lt;/h2&gt;
+
+&lt;p&gt;We’ll first start with FastCGI. Create &lt;code class=&quot;highlighter-rouge&quot;&gt;testapp.fcgi&lt;/code&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/python&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;flup.server.fcgi&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WSGIServer&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;testapp&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__name__&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'__main__'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;WSGIServer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bindAddress&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'127.0.0.1:9000'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now run the testapp.fcgi:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;chmod +x testapp.fcgi
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;./testapp.fcgi &amp;amp;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Next, update the Nginx configuration for FastCGI:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;try_files&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$uri&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@testapp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@testapp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;include&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fastcgi_params&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;fastcgi_param&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;PATH_INFO&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$fastcgi_script_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;fastcgi_param&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;SCRIPT_NAME&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+    &lt;span class=&quot;kn&quot;&gt;fastcgi_pass&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;127.0.0.1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Notice how the &lt;code class=&quot;highlighter-rouge&quot;&gt;fastcgi_pass&lt;/code&gt; path is the same in the .fcgi script and in the Nginx configuration. This is the socket that Nginx uses 
+to communicate with the FastCGI process. If you have started the &lt;code class=&quot;highlighter-rouge&quot;&gt;testapp.fcgi&lt;/code&gt; process and have Nginx running with the above 
+configuration, you can go to your server and see the two endpoints &lt;code class=&quot;highlighter-rouge&quot;&gt;/&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/list&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;load-balanced&quot;&gt;Load balanced&lt;/h2&gt;
+
+&lt;p&gt;To use this in a load balanced environment, simply use the server groups as detailed in &lt;a href=&quot;/2017/06/06/load-balancing-in-nginx-part-1.html&quot;&gt;part 1&lt;/a&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;uptream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;   
+
+&lt;span class=&quot;k&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt;       &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;try_files&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$uri&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@userapp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@userapp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;include&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;fastcgi_params&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;fastcgi_split_path_info&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;^(/users)(.*)&lt;/span&gt;$&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;fastcgi_param&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;PATH_INFO&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$fastcgi_script_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kn&quot;&gt;fastcgi_param&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;SCRIPT_NAME&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+        &lt;span class=&quot;kn&quot;&gt;fastcgi_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Server groups act as a legitimate endpoint for &lt;code class=&quot;highlighter-rouge&quot;&gt;fastcgi_pass&lt;/code&gt;-throughs. This means that on each of those server group servers, you’ll need to deploy 
+and run the FastCGI script and the Python application.&lt;/p&gt;
+
+&lt;h1 id=&quot;uwsgi&quot;&gt;uWSGI&lt;/h1&gt;
+
+&lt;h2 id=&quot;single-server-1&quot;&gt;Single server&lt;/h2&gt;
+
+&lt;p&gt;Next let’s try using uWSGI on a single server. We’ll use the same Flask application as above. uWSGI doesn’t require a “loader” file as FastCGI does: you 
+can tell it where to mount by passing an argument to the uWSGI program:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;uwsgi -s 127.0.0.1:9000 --manage-script-name --mount /users&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;testapp:app --plugin python&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;And the Nginx configuration will look very similar to FastCGI&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;try_files&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$uri&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@testapp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@testapp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;include&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;uwsgi_params&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;uwsgi_pass&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;127.0.0.1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;You’ll have to use a uWSGI mount that is the same as the Nginx path.&lt;/p&gt;
+
+&lt;h2 id=&quot;load-balanced-1&quot;&gt;Load balanced&lt;/h2&gt;
+
+&lt;p&gt;uWSGI can also take advantage of server groups like FastCGI.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-nginx&quot; data-lang=&quot;nginx&quot;&gt;&lt;span class=&quot;k&quot;&gt;uptream&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;users1.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;users2.host.com&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;   
+
+&lt;span class=&quot;k&quot;&gt;server&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;listen&lt;/span&gt;       &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;/users&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;try_files&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$uri&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@userapp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;kn&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@userapp&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;kn&quot;&gt;include&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;uwsgi_params&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;kn&quot;&gt;uwsgi_pass&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;users&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;You’ll still need to deploy the apps and run the &lt;code class=&quot;highlighter-rouge&quot;&gt;uwsgi&lt;/code&gt; command on each of the endpoints.&lt;/p&gt;</content><author><name></name></author><summary type="html">As covered in part 1 we are diving into Nginx as a load balancer. In this part we cover uWSGI and FastCGI servers, initially with no load balancing (for testing) and then with load balancing.</summary></entry><entry><title type="html">Load Balancing in Nginx Part 1</title><link href="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html" rel="alternate" type="text/html" title="Load Balancing in Nginx Part 1" /><published>2017-06-06T08:16:01-04:00</published><updated>2017-06-06T08:16:01-04:00</updated><id>https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1</id><content type="html" xml:base="https://andrew-sledge.github.io/2017/06/06/load-balancing-in-nginx-part-1.html">&lt;p&gt;One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures 
 load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to 
 proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).&lt;/p&gt;
 
@@ -212,4 +341,4 @@ case we’ll have more failure tolerance for the posts endpoint, but very little
 
 &lt;h1 id=&quot;up-next&quot;&gt;Up Next&lt;/h1&gt;
 
-&lt;p&gt;In part 2, we’ll be covering uWSGI and FastCGI servers and the associated options.&lt;/p&gt;</content><author><name></name></author><summary type="html">One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).</summary></entry></feed>
+&lt;p&gt;In &lt;a href=&quot;/2017/06/06/load-balancing-in-nginx-part-1.html&quot;&gt;part 2&lt;/a&gt;, we’ll be covering uWSGI and FastCGI servers and the associated options.&lt;/p&gt;</content><author><name></name></author><summary type="html">One of the many appealing things that Nginx does well is load balancing. In a world of expanding microservices and elastic architectures load balanced solutions have become more prevalent. Not only does Nginx does this well, it’s pretty easy. Nginx also has the ability to proxy through to non-HTTP servers like uWSGI servers (Python) or FastCGI (PHP, C, Python, Golang, and more).</summary></entry></feed>
